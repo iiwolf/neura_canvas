@@ -4,6 +4,7 @@ import random
 import shutil
 import os
 import sys
+import plotly
 
 def line_length(line):
     return ((line[1][0] - line[0][0]) ** 2 + (line[1][1] - line[0][1]) ** 2) ** 0.5
@@ -15,8 +16,12 @@ def segments_intersect(A, B, C, D):
     return ((oriented_area(A, B, C) * oriented_area(A, B, D) <= 0) and
             (oriented_area(C, D, A) * oriented_area(C, D, B) <= 0))
 
+
 def generate_random_lines(num_lines, x_range, y_range, filename='random_lines.png'):
-    fig = go.Figure()
+    fig = go.Figure(layout=go.Layout(paper_bgcolor='black',
+                                      plot_bgcolor='black',
+                                      xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                      yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
 
     # List of line segments represented as tuple of two points
     lines = []
@@ -31,10 +36,19 @@ def generate_random_lines(num_lines, x_range, y_range, filename='random_lines.pn
         if not any(segments_intersect(line[0], line[1], new_line[0], new_line[1]) for line in lines):
             lines.append(new_line)
 
-    for line in lines:
-        fig.add_trace(go.Scatter(x=[line[0][0], line[1][0]], y=[line[0][1], line[1][1]], mode='lines'))
+    # Sort lines by length
+    lines.sort(key=line_length)
 
-    fig.write_image(filename)
+    # Get color scale
+    colorscale = plotly.colors.n_colors('rgb(0, 200, 255)', 'rgb(128, 0, 128)', len(lines), colortype='rgb')
+
+    for i, line in enumerate(lines):
+        fig.add_trace(go.Scatter(x=[line[0][0], line[1][0]], y=[line[0][1], line[1][1]], 
+                                 mode='lines',
+                                 line=dict(color=colorscale[i], width=2)))
+
+    fig.update_layout(template='plotly_dark', showlegend=False)
+    fig.write_image(filename, height=2000, width=2000)
     fig.show()
 
 def save_script(filename):
@@ -47,7 +61,7 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 4
+    iteration = 7
     path = Path(f"NFT_{iteration:06d}")
     path.mkdir(exist_ok=True)
 
