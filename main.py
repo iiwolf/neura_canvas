@@ -62,7 +62,7 @@ def generate_random_lines(num_lines, x_range, y_range, filename='random_lines.pn
             y1 = y2 = random.uniform(y_range[0], y_range[1])
             x1, x2 = random.uniform(x_range[0], x_range[1] - lengths[len(lines)]), random.uniform(x_range[0] + lengths[len(lines)], x_range[1])
 
-        if len(lines) % 10 == 0:
+        if len(lines) % 100 == 0:
             new_line = ((x1, y1), (x2, y2))
         else:
             new_line = (lines[-1][1], (x2, y2))
@@ -100,14 +100,14 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 29
-    n_variations = 5
+    iteration = 31
+    n_variations = 1
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_lines(500, [-10, 10], [-10, 10], filename=path / "image.png")
+        generate_random_lines(100, [-10, 10], [-10, 10], filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
