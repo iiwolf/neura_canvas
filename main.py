@@ -9,6 +9,7 @@ import plotly
 from faker import Faker
 fake = Faker()
 GOLDEN_RATIO = (1 + 5 ** 0.5) / 2
+from tqdm import tqdm
 
 def generate_random_colors(num_colors):
     colors = []
@@ -45,32 +46,39 @@ def generate_random_lines(num_lines, x_range, y_range, filename='random_lines.pn
     lengths = [1 / (GOLDEN_RATIO ** i) for i in range(num_lines)]
 
     # List of line segments represented as tuple of two points
-    lines = []
+    x = random.uniform(x_range[0], x_range[1] - lengths[0])
+    lines = [[
+        (x, random.uniform(y_range[0] + lengths[0], y_range[1])),
+        (x, random.uniform(y_range[0] + lengths[0], y_range[1])),
+    ]]
     
     # Get color scale
     colorscale = plotly.colors.n_colors('rgb(0, 200, 255)', 'rgb(128, 0, 128)', int(num_lines / 10), colortype='rgb')
     colorscale = generate_random_colors(int(num_lines / 10))
     color_idx = -1
+    direction = False
+    pbar = tqdm(total=num_lines)
     while len(lines) < num_lines:
         # Choose randomly between a vertical and a horizontal line
-        if random.choice([True, False]):
+        if direction:
             # Vertical line: x-coordinates are equal, y-coordinates vary
-            x1 = x2 = random.uniform(x_range[0], x_range[1])
+            x1 = x2 = lines[-1][1][0]
             y1, y2 = random.uniform(y_range[0], y_range[1] - lengths[len(lines)]), random.uniform(y_range[0] + lengths[len(lines)], y_range[1])
         else:
             # Horizontal line: y-coordinates are equal, x-coordinates vary
-            y1 = y2 = random.uniform(y_range[0], y_range[1])
+            y1 = y2 = lines[-1][1][1]
             x1, x2 = random.uniform(x_range[0], x_range[1] - lengths[len(lines)]), random.uniform(x_range[0] + lengths[len(lines)], x_range[1])
 
-        if len(lines) % 100 == 0:
+        if len(lines) % 10 == 0:
             new_line = ((x1, y1), (x2, y2))
         else:
             new_line = (lines[-1][1], (x2, y2))
 
         # Check if the new line intersects with any existing line
         if not any(segments_intersect(line[0], line[1], new_line[0], new_line[1]) for line in lines[:-1]):
-
+            direction = not direction
             lines.append(new_line)
+            pbar.update(1)
 
 
     # Sort lines by length
@@ -100,14 +108,14 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 31
+    iteration = 32
     n_variations = 1
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_lines(100, [-10, 10], [-10, 10], filename=path / "image.png")
+        generate_random_lines(1000, [-10, 10], [-10, 10], filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
