@@ -1,5 +1,6 @@
 from pathlib import Path
 import plotly.graph_objects as go
+from matplotlib import cm
 import random
 import shutil
 import os
@@ -7,7 +8,7 @@ import sys
 import plotly
 from faker import Faker
 fake = Faker()
-
+GOLDEN_RATIO = (1 + 5 ** 0.5) / 2
 def line_length(line):
     return ((line[1][0] - line[0][0]) ** 2 + (line[1][1] - line[0][1]) ** 2) ** 0.5
 
@@ -47,13 +48,17 @@ def generate_random_lines(num_lines, x_range, y_range, filename='random_lines.pn
     # Sort lines by length
     lines.sort(key=line_length)
 
-    # Get color scale
-    colorscale = plotly.colors.n_colors('rgb(0, 200, 255)', 'rgb(128, 0, 128)', len(lines), colortype='rgb')
+    # Calculate the gradient of colors using the golden ratio
+    gradient = [cm.plasma(i / GOLDEN_RATIO % 1) for i in range(num_lines)]
+
+    # Get the RGB values and format them as CSS-compatible strings
+    colorscale = ["rgb({}, {}, {})".format(int(r * 255), int(g * 255), int(b * 255)) for r, g, b, _ in gradient]
 
     for i, line in enumerate(lines):
         fig.add_trace(go.Scatter(x=[line[0][0], line[1][0]], y=[line[0][1], line[1][1]], 
                                  mode='lines',
                                  line=dict(color=colorscale[i], width=2)))
+
 
     fig.update_layout(template='plotly_dark', showlegend=False, title_text=fake.sentence(nb_words=4))
     fig.write_image(filename, height=1080, width=1920)
@@ -69,7 +74,7 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 14
+    iteration = 15
     n_variations = 10
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
