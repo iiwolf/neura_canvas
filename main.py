@@ -46,11 +46,7 @@ def generate_random_lines(num_lines, x_range, y_range, filename='random_lines.pn
 
         # Check if the new line intersects with any existing line
         if not any(segments_intersect(line[0], line[1], new_line[0], new_line[1]) for line in lines):
-            if len(lines) > 0:
-                new = ((lines[-1][1][0], lines[-1][1][1]), (new_line[1][0], new_line[1][1]))
-                lines.append(new)
-            else:
-                lines.append(new_line)
+            lines.append(new_line)
 
     # Sort lines by length
     lines.sort(key=line_length)
@@ -77,7 +73,7 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 23
+    iteration = 15
     n_variations = 10
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
