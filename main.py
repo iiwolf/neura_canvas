@@ -5,7 +5,8 @@ import shutil
 import os
 import sys
 import plotly
-import uuid
+from faker import Faker
+fake = Faker()
 
 def line_length(line):
     return ((line[1][0] - line[0][0]) ** 2 + (line[1][1] - line[0][1]) ** 2) ** 0.5
@@ -54,7 +55,7 @@ def generate_random_lines(num_lines, x_range, y_range, filename='random_lines.pn
                                  mode='lines',
                                  line=dict(color=colorscale[i], width=2)))
 
-    fig.update_layout(template='plotly_dark', showlegend=False, title_text=str(uuid.uuid4()))
+    fig.update_layout(template='plotly_dark', showlegend=False, title_text=fake.sentence(nb_words=4))
     fig.write_image(filename, height=1080, width=1920)
     fig.show()
 
@@ -68,8 +69,8 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 13
-    n_variations = 1
+    iteration = 14
+    n_variations = 10
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
