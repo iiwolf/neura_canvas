@@ -9,8 +9,6 @@ import plotly
 from faker import Faker
 fake = Faker()
 GOLDEN_RATIO = (1 + 5 ** 0.5) / 2
-def line_length(line):
-    return ((line[1][0] - line[0][0]) ** 2 + (line[1][1] - line[0][1]) ** 2) ** 0.5
 
 def oriented_area(A, B, C):
     return (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0])
@@ -19,7 +17,56 @@ def segments_intersect(A, B, C, D):
     return ((oriented_area(A, B, C) * oriented_area(A, B, D) <= 0) and
             (oriented_area(C, D, A) * oriented_area(C, D, B) <= 0))
 
-def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.png"):
+def line_length(line):
+    return ((line[1][0] - line[0][0]) ** 2 + (line[1][1] - line[0][1]) ** 2) ** 0.5
+
+def generate_koch_snowflake(level, x1, y1, x2, y2):
+    if level == 0:
+        return [(x1, y1), (x2, y2)]
+
+    # Calculate the length of each segment
+    segment_length = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 / 3
+
+    # Calculate the angle between the segment and the x-axis
+    angle = (2 * random.random() - 1) * 60  # Random angle deviation within -60 to 60 degrees
+
+    # Calculate the coordinates of the midpoints
+    x_mid = (x1 + x2) / 2
+    y_mid = (y1 + y2) / 2
+
+    # Calculate the coordinates of the outer points
+    x_outer = (
+        x_mid + segment_length * (2 ** 0.5 / 2) * (1 + random.uniform(-0.1, 0.1))
+    )  # Random scaling within 0.9 to 1.1
+    y_outer = y_mid + segment_length * (2 ** 0.5 / 2) * (1 + random.uniform(-0.1, 0.1))
+
+    # Generate the lines for the Koch snowflake
+    lines = []
+    lines.extend(
+        generate_koch_snowflake(
+            level - 1, x1, y1, x_mid, y_mid
+        )
+    )
+    lines.extend(
+        generate_koch_snowflake(
+            level - 1, x_mid, y_mid, x_outer * (1 + random.uniform(-0.05, 0.05)), y_outer
+        )
+    )
+    lines.extend(
+        generate_koch_snowflake(
+            level - 1, x_outer * (1 + random.uniform(-0.05, 0.05)), y_outer, x_mid, y_mid
+        )
+    )
+    lines.extend(
+        generate_koch_snowflake(
+            level - 1, x_mid, y_mid, x2, y2
+        )
+    )
+
+    return lines
+
+
+def generate_random_art(num_lines, x_range, y_range, level, filename="random_art.png"):
     fig = go.Figure(
         layout=go.Layout(
             paper_bgcolor="black",
@@ -29,37 +76,18 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
         )
     )
 
-    # Generate line lengths based on the golden ratio
-    lengths = [1 / (GOLDEN_RATIO ** i) for i in range(num_lines)]
+    # Generate Koch snowflake lines
+    lines = generate_koch_snowflake(level, x_range[0], y_range[0], x_range[1], y_range[1])
 
-    # List of line segments represented as tuples of two points
-    lines = []
-
-    while len(lines) < num_lines:
-        x1 = random.uniform(x_range[0], x_range[1])
-        y1 = random.uniform(y_range[0], y_range[1])
-        
-        # Define x2 and y2 as functions of x1 and y1
-        x2 = random.uniform(x_range[0], x_range[1]) * GOLDEN_RATIO
-        y2 = random.uniform(y_range[0], y_range[1]) / GOLDEN_RATIO
-
-        new_line = ((x1, y1), (x2, y2))
-
-        # Check if the new line intersects with any existing line
-        if not any(
-            segments_intersect(line[0], line[1], new_line[0], new_line[1]) for line in lines
-        ):
-            lines.append(new_line)
-
-    # Sort lines by length
-    lines.sort(key=line_length)
+    # Shuffle the lines randomly
+    random.shuffle(lines)
 
     # Get color scale
     colorscale = plotly.colors.n_colors(
         "rgb(0, 200, 255)", "rgb(128, 0, 128)", len(lines), colortype="rgb"
     )
 
-    for i, line in enumerate(lines):
+    for i, line in enumerate(lines[:num_lines]):
         fig.add_trace(
             go.Scatter(
                 x=[line[0][0], line[1][0]],
@@ -87,14 +115,14 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 18
+    iteration = 19
     n_variations = 10
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_lines(500, [-10, 10], [-10, 10], filename=path / "image.png")
+        generate_random_art(50, [-10, 10], [-10, 10], 1, filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
