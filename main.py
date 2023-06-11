@@ -80,18 +80,18 @@ def generate_random_art(num_lines, x_range, y_range, level, filename="random_art
     lines = generate_koch_snowflake(level, x_range[0], y_range[0], x_range[1], y_range[1])
 
     # Shuffle the lines randomly
-    random.shuffle(lines)
+    # random.shuffle(lines)
 
     # Get color scale
     colorscale = plotly.colors.n_colors(
         "rgb(0, 200, 255)", "rgb(128, 0, 128)", len(lines), colortype="rgb"
     )
 
-    for i, line in enumerate(lines[:num_lines]):
+    for i in range(0,len(lines) - 1):
         fig.add_trace(
             go.Scatter(
-                x=[line[0][0], line[1][0]],
-                y=[line[0][1], line[1][1]],
+                x=[lines[i][0],lines[i + 1][0]],
+                y=[lines[i][1],lines[i + 1][1]],
                 mode="lines",
                 line=dict(color=colorscale[i], width=2),
             )
@@ -115,14 +115,14 @@ def save_script(filename):
 
 if __name__ == '__main__':
 
-    iteration = 19
+    iteration = 23
     n_variations = 10
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_art(50, [-10, 10], [-10, 10], 1, filename=path / "image.png")
+        generate_random_art(5, [-10, 10], [-10, 10], 5, filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
