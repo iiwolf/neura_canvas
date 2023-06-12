@@ -7,7 +7,7 @@ import sys
 import plotly
 from faker import Faker
 from tqdm import tqdm
-
+import numpy as np
 fake = Faker()
 GOLDEN_RATIO = (1 + 5 ** 0.5) / 2
 
@@ -66,7 +66,7 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
     lines = [generate_random_line(x_range, y_range, starting_line_length)]
 
     # Get color scale
-    colorscale = generate_random_colors(1000)
+    colorscale = generate_random_colors(20000)
     color_idx = -1
     direction = False
     pbar = tqdm(total=num_lines)
@@ -89,7 +89,8 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
             x1, x2 = lines[-1][1][0], lines[-1][1][0] + line_length * (1 if random.random() < 0.5 else -1)
 
 
-        if attempt >= max_attempts:
+        if attempt >= max_attempts or line_length <= 0.1:
+            line_length = starting_line_length
             new_line = generate_random_line(x_range, y_range, line_length)
             nc = True
         else:
@@ -107,7 +108,10 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
             pbar.update(1)
             attempt = 0
             new_color.append(nc)
-            line_length = starting_line_length
+
+            if len(lines) % 100 == 0:
+                x_range = 2.0 * np.array(x_range)
+                y_range = 2.0 * np.array(y_range)
 
     for i, line in enumerate(lines):
 
@@ -124,7 +128,7 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
         )
 
     fig.update_layout(
-        template="plotly_dark", showlegend=False, title_text=fake.sentence(nb_words=4)
+        template="plotly_dark", showlegend=False, title=dict(text=f"<b>{fake.sentence(nb_words=2)}<b>", font_size=20)
     )
     fig.write_image(filename, height=1080, width=1920)
     fig.show()
@@ -140,14 +144,14 @@ def save_script(filename):
 
 if __name__ == "__main__":
 
-    iteration = 34
-    n_variations = 1
+    iteration = 39
+    n_variations = 10
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_lines(1000, [-10, 10], [-10, 10], filename=path / "image.png")
+        generate_random_lines(200, [-1, 1], [-1, 1], filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
