@@ -83,7 +83,13 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
     nc = False
     line_length = starting_line_length
     since_last_jump = 0
-    per_level = 100
+    per_level = 50
+    per_loc = 1000
+    ogx = x_range
+    ogy = y_range
+    x_direction = 1
+    y_direction = 1
+
     while len(lines) < num_lines:
         attempt += 1
         new_line = generate_random_line(x_range, y_range, line_length, lines[-1][1])
@@ -112,9 +118,19 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
             new_color.append(nc)
 
             if len(lines) % per_level == 0:
-                x_range = 2.0 * np.array(x_range)
-                y_range = 2.0 * np.array(y_range)
-                per_level *= 10
+                # x_range = 2.0 * np.array(x_range)
+                # y_range = 2.0 * np.array(y_range)
+                # per_level *= 10
+                # if per_level >= 1000:
+                # if len(lines) % per_loc == 0:
+                x_range = np.array(x_range) + 2 * (0 if random.uniform(0, 1) < 0.5 else x_direction)
+                y_range = np.array(y_range) + 2 * (0 if random.uniform(0, 1) < 0.5 else y_direction)
+                # per_level *= 2
+                # print(x_range)
+                # print(y_range)
+            if len(lines) % per_loc == 0:
+                x_direction *= (-1 if random.uniform(0, 1) < 0.5 else 1)
+                y_direction *= (-1 if random.uniform(0, 1) < 0.5 else 1)
 
     for i, line in enumerate(lines):
 
@@ -147,14 +163,14 @@ def save_script(filename):
 
 if __name__ == "__main__":
 
-    iteration = 41
+    iteration = 44
     n_variations = 1
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_lines(100, [-1, 1], [-1, 1], filename=path / "image.png")
+        generate_random_lines(10000, [-1, 1], [-1, 1], filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
