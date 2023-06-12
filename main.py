@@ -41,13 +41,21 @@ def segments_intersect(A, B, C, D):
         (oriented_area(A, B, C) * oriented_area(A, B, D) <= 0)
         and (oriented_area(C, D, A) * oriented_area(C, D, B) <= 0)
     )
+
+
 def generate_random_point(x_range, y_range):
     return (random.uniform(x_range[0], x_range[1]), random.uniform(y_range[0], y_range[1]))
 
-def generate_random_line(x_range, y_range, line_length):
-    p1 = generate_random_point(x_range, y_range)
-    p2 = (p1[0], p1[1] + line_length)
-    return (p1,p2)
+
+def generate_random_line(x_range, y_range, line_length, last_line_end):
+    angle = random.uniform(0, 2 * np.pi)
+    dx = line_length * np.cos(angle)
+    dy = line_length * np.sin(angle)
+
+    p1 = last_line_end
+    p2 = (p1[0] + dx, p1[1] + dy)
+    return (p1, p2)
+
 
 def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.png"):
     fig = go.Figure(
@@ -63,55 +71,50 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
     starting_line_length = 1
 
     # List of line segments represented as tuple of two points
-    lines = [generate_random_line(x_range, y_range, starting_line_length)]
+    lines = [generate_random_line(x_range, y_range, starting_line_length, generate_random_point(x_range, y_range))]
 
     # Get color scale
     colorscale = generate_random_colors(20000)
     color_idx = -1
-    direction = False
     pbar = tqdm(total=num_lines)
-    max_attempts = 2
+    max_attempts = 100
     attempt = 0
     new_color = [False]
     nc = False
     line_length = starting_line_length
-
+    since_last_jump = 0
+    per_level = 100
     while len(lines) < num_lines:
         attempt += 1
-        # Choose randomly between a vertical and a horizontal line
-        if direction:
-            # Vertical line: x-coordinates are equal, y-coordinates vary
-            x1 = x2 = lines[-1][1][0]
-            y1, y2 = lines[-1][1][1], lines[-1][1][1] + line_length * (1 if random.random() < 0.5 else -1)
-        else:
-            # Horizontal line: y-coordinates are equal, x-coordinates vary
-            y1 = y2 = lines[-1][1][1]
-            x1, x2 = lines[-1][1][0], lines[-1][1][0] + line_length * (1 if random.random() < 0.5 else -1)
-
+        new_line = generate_random_line(x_range, y_range, line_length, lines[-1][1])
 
         if attempt >= max_attempts or line_length <= 0.1:
             line_length = starting_line_length
-            new_line = generate_random_line(x_range, y_range, line_length)
+            new_line = generate_random_line(x_range, y_range, line_length, generate_random_point(x_range, y_range))
             nc = True
+
+            if since_last_jump > 0 and since_last_jump < 3:
+                lines = lines[:-since_last_jump]
+            since_last_jump = 0
         else:
-            new_line = (lines[-1][1], (x2, y2))
-            line_length *= 0.9
+            line_length *= 0.8
             nc = False
-        
+            since_last_jump += 1
+
         # Check if the new line intersects with any existing line
         if not any(
             segments_intersect(line[0], line[1], new_line[0], new_line[1])
             for line in lines[:-1]
         ):
-            direction = not direction
             lines.append(new_line)
             pbar.update(1)
             attempt = 0
             new_color.append(nc)
 
-            if len(lines) % 100 == 0:
+            if len(lines) % per_level == 0:
                 x_range = 2.0 * np.array(x_range)
                 y_range = 2.0 * np.array(y_range)
+                per_level *= 10
 
     for i, line in enumerate(lines):
 
@@ -130,7 +133,7 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
     fig.update_layout(
         template="plotly_dark", showlegend=False, title=dict(text=f"<b>{fake.sentence(nb_words=2)}<b>", font_size=20)
     )
-    fig.write_image(filename, height=1080, width=1920)
+    fig.write_image(filename, height=1000, width=1000)
     fig.show()
 
 
@@ -144,14 +147,14 @@ def save_script(filename):
 
 if __name__ == "__main__":
 
-    iteration = 39
-    n_variations = 10
+    iteration = 41
+    n_variations = 1
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_lines(200, [-1, 1], [-1, 1], filename=path / "image.png")
+        generate_random_lines(100, [-1, 1], [-1, 1], filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
