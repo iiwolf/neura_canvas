@@ -41,7 +41,13 @@ def segments_intersect(A, B, C, D):
         (oriented_area(A, B, C) * oriented_area(A, B, D) <= 0)
         and (oriented_area(C, D, A) * oriented_area(C, D, B) <= 0)
     )
+def generate_random_point(x_range, y_range):
+    return (random.uniform(x_range[0], x_range[1]), random.uniform(y_range[0], y_range[1]))
 
+def generate_random_line(x_range, y_range, line_length):
+    p1 = generate_random_point(x_range, y_range)
+    p2 = (p1[0], p1[1] + line_length)
+    return (p1,p2)
 
 def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.png"):
     fig = go.Figure(
@@ -54,22 +60,22 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
     )
 
     # Generate a random line length
-    line_length = random.uniform(0.5, 2)
+    starting_line_length = 1
 
     # List of line segments represented as tuple of two points
-    x = random.uniform(x_range[0], x_range[1] - line_length)
-    lines = [[
-        (x, random.uniform(y_range[0] + line_length, y_range[1])),
-        (x, random.uniform(y_range[0] + line_length, y_range[1])),
-    ]]
+    lines = [generate_random_line(x_range, y_range, starting_line_length)]
 
     # Get color scale
-    colorscale = generate_random_colors(int(num_lines / 10))
+    colorscale = generate_random_colors(1000)
     color_idx = -1
     direction = False
     pbar = tqdm(total=num_lines)
     max_attempts = 2
     attempt = 0
+    new_color = [False]
+    nc = False
+    line_length = starting_line_length
+
     while len(lines) < num_lines:
         attempt += 1
         # Choose randomly between a vertical and a horizontal line
@@ -83,11 +89,14 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
             x1, x2 = lines[-1][1][0], lines[-1][1][0] + line_length * (1 if random.random() < 0.5 else -1)
 
 
-        if attempt == max_attempts:
-            new_line = ((x1, y1), (x2, y2))
+        if attempt >= max_attempts:
+            new_line = generate_random_line(x_range, y_range, line_length)
+            nc = True
         else:
             new_line = (lines[-1][1], (x2, y2))
-
+            line_length *= 0.9
+            nc = False
+        
         # Check if the new line intersects with any existing line
         if not any(
             segments_intersect(line[0], line[1], new_line[0], new_line[1])
@@ -97,10 +106,12 @@ def generate_random_lines(num_lines, x_range, y_range, filename="random_lines.pn
             lines.append(new_line)
             pbar.update(1)
             attempt = 0
+            new_color.append(nc)
+            line_length = starting_line_length
 
     for i, line in enumerate(lines):
 
-        if i % 10 == 0:
+        if new_color[i]:
             color_idx = color_idx + 1
 
         fig.add_trace(
@@ -129,14 +140,14 @@ def save_script(filename):
 
 if __name__ == "__main__":
 
-    iteration = 32
+    iteration = 34
     n_variations = 1
     for variation in range(0, n_variations):
         path = Path(f"NFT_{iteration:06d}") / f"{variation:02d}"
         path.mkdir(parents=True, exist_ok=True)
 
         # Use the function
-        generate_random_lines(100, [-10, 10], [-10, 10], filename=path / "image.png")
+        generate_random_lines(1000, [-10, 10], [-10, 10], filename=path / "image.png")
 
         # Copy to working image
         shutil.copy(path / "image.png", "working_image.png")
